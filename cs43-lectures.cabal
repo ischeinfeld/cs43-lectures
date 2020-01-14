@@ -18,5 +18,6 @@ executable cs43-lectures
   main-is:             Main.hs
   other-modules:       Lecture1
                      , Lecture2
+                     , Lecture3
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
