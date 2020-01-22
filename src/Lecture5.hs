@@ -10,22 +10,87 @@ module Lecture5 where
  - of design patterns using the typeclass. -}
 
 -------------------------------
--- Give some background on types
+-- Some background on types
 --------------------------------
 
 -- Type = Set of possible values
--- |Type| = Size of set
--- data And = And T1 T2
--- |And| = |T1| x |T2|
--- And = T1 x T2
 
--- data Or = Left T1 | Right T2
--- |Or| = |T1| + |T2|
--- Or = T1 + T2
+-- Base Types = Bool, Int, Float
+-- Algebraic Data Types = [Bool], Tree Int
+-- Some "base" types are defined as ADT, some could
 
--- Algebraic Datatypes
+-- data Unit = ()
+-- data Bool = True | False
+-- data Ord = LT | EQ | GT
+data Natural = S Natural | Z
+data Integer = NonNeg Natural | Neg Natural
+
+-- In both cases, we can talk about the size / cardinality
+
+-- |Bool| = 2
+-- |Ord| = 3
+-- |Int| = ~ 2^64
+-- |Natural| = infinity
+-- |Integer| = infinity
+
+-- Why "Algebraic"?
+
+-- data BoolAndOrd = BoolAndOrd Bool Ord
+-- |BoolAndOrd| = 2 * 3
+
+-- data BoolOrOrd = ABool Bool | AnOrd Ord
+-- |BoolOrOrd| = 2 + 3
+
+-- data BoolToOrd = BoolToOrd (Bool -> Ord)
+-- |BoolToOrd| = 3 ^ 2
+
+-- data OrdToBool = OrdToBool (Ord -> Bool)
+-- |OrdToBool| = 2 ^ 3
+
+
+data Sum a b = First a | Second b  -- same as (Either a b)
+
+data Prod a b = Prod a b           -- same as ((,) a b) aka. (a,b)
+
+data Func a b = Func (a -> b)      -- same as (a -> b)
+
+-- > constructors in ghci
+
+-- |Sum a b| = |a| + |b|
+-- |Prod a b| = |a| * |b|
+-- |Func a b| = |b| ^ |a|
+
+-- |a + b| = |a| + |b|
+-- |a * b| = |a| * |b|
+-- |a -> b| = |b| ^ |a|
+
+
 -- data OurType = Con T1 T2 T3 | Con T4 T5
 -- |OurType| = (|T1|*|T2|*|T3|) + (|T4|*|T5|)
+
+
+-- "Algebra"
+-- (a + b) * (c + d) = a*c + a*d + b*c + b*d
+
+
+data LHS a b c d = LHS (Either a b) (Either c d) 
+data RHS a b c d = RHS1 a c | RHS2 a d | RHS3 b c | RHS4 b d
+
+isoLR :: LHS a b c d -> RHS a b c d
+isoLR (LHS (Left a) (Left c))   = RHS1 a c
+isoLR (LHS (Left a) (Right d))  = RHS2 a d
+isoLR (LHS (Right b) (Left c))  = RHS3 b c
+isoLR (LHS (Right b) (Right d)) = RHS4 b d
+
+isoRL :: RHS a b c d -> LHS a b c d
+isoRL (RHS1 a c) = LHS (Left a) (Left c)   
+isoRL (RHS2 a d) = LHS (Left a) (Right d)
+isoRL (RHS3 b c) = LHS (Right b) (Left c)
+isoRL (RHS4 b d) = LHS (Right b) (Right d)
+
+-- isoLR . isoRL == (id :: LHS -> LHS)
+-- isoRL . isoRL == (id :: RHS -> RHS)
+
 
 {-
 
@@ -39,7 +104,7 @@ class Functor f where
 data Identity a = Identity a
   deriving (Show)
 
-data Pair a = Pair a a  -- same as built-in (,) or Complex
+data Pair a = Pair a a  -- same as built-in Complex
   deriving (Show)
 
 data Optional a = Missing | Existing a  -- same as built-in Maybe
@@ -60,6 +125,15 @@ aTree = Node (Node Leaf 2 Leaf) 1 Leaf :: Tree Int
 aRoseTree = RoseTree 1 [RoseTree 2 [], RoseTree 3 [RoseTree 4 []]] :: RoseTree Int
 
 
+-- TODO give examples as you go
+
+-- > (+ 2) 1
+-- > fmap (+ 2) (Identity 1)
+-- > (+ 2) <$> (Identity 1)
+-- > (+ 2) $ 1
+
+-- > (+ 2) <$> aBlahBlah
+
 instance Functor Identity where
   fmap f (Identity x) = Identity (f x)
 
@@ -77,13 +151,6 @@ instance Functor Tree where
 instance Functor RoseTree where
   fmap f (RoseTree x trees) = RoseTree (f x) $ map (fmap f) trees
 
-
--- > (+ 2) 1
--- > fmap (+ 2) (Identity 1)
--- > (+ 2) <$> (Identity 1)
--- > (+ 2) $ 1
-
--- > (+ 2) <$> aBlahBlah
 
 -- > :info Functor
 -- > :t (<$)
@@ -110,36 +177,38 @@ class Functor f where
 
 -- Functor for types of kind * -> * -> *
 
-data SumType a b = First a | Second b
-  deriving (Show)
-
-data ProductType a b = Product a b
-  deriving (Show)
-
-data FunctionType a b = Function (a -> b)
+-- TODO copy down data declarations
 
 
-
-instance Functor (SumType a) where
-  fmap :: (b -> c) -> SumType a b -> SumType a c
+instance Functor (Sum a) where
+  fmap :: (b -> c) -> Sum a b -> Sum a c
   fmap _ (First x) = First x       -- x :: a
   fmap f (Second x) = Second (f x) -- x :: b
 
-instance Functor (ProductType a) where
-  fmap :: (b -> c) -> ProductType a b -> ProductType a c
-  fmap f (Product x y) = Product x (f y)
+instance Functor (Prod a) where
+  fmap :: (b -> c) -> Prod a b -> Prod a c
+  fmap f (Prod x y) = Prod x (f y)
 
-instance Functor (FunctionType a) where
-  fmap :: (b -> c) -> FunctionType a b -> FunctionType a c
-  fmap f (Function g) = Function (f . g)
+instance Functor (Func a) where
+  fmap :: (b -> c) -> Func a b -> Func a c
+  fmap f (Func g) = Func (f . g)
 
 {- Built-in
 
+instance Functor (Either a) where
+  fmap :: (b -> c) -> Either a b -> Either a c
+  ...
+
+instance Functor ((,) a) where
+  fmap :: (b -> c) -> (a, b) -> (a, c)
+  ...
+
 instance Functor ((->) a) where
-  fmap :: (b -> c) -> (->) a b -> (->) a c
-  fmap = (.) -- expand type above to show
+  fmap :: (b -> c) -> (a -> b) -> (a -> c)
+  fmap = (.)
 
 -}
+
 
 
 {- Rewrite in record sytax
@@ -175,9 +244,10 @@ readPlayer = Reader player
 readLevel :: Reader GameState Int
 readLevel = Reader level
 
+{-
 readName :: Reader GameState String
 readName :: playerName <$> readPlayer
 
 readHealth :: Reader GameState String
 readHealth :: playerHealth <$> readPlayer
-
+-}
