@@ -1,0 +1,29 @@
+name:                cs43-parsing
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/ischeinfeld/cs43-parsing#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Isaac Scheinfeld
+maintainer:          ischeinfeld@outlook.com
+copyright:           2020 Isaac Scheinfeld
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Parser
+  build-depends:       base >= 4.7 && < 5
+  default-language:    Haskell2010
+
+executable calculator
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  other-modules:       Calculator
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , cs43-parsing
+  default-language:    Haskell2010
