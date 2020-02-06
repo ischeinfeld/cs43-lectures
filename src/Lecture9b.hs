@@ -119,3 +119,4 @@ addStuff = do
   return (a+b)
 
 -- https://people.cs.kuleuven.be/~tom.schrijvers/Research/talks/probability_monad.pdf
+-- https://doisinkidney.com/posts/2018-06-30-probability-5-ways.html
