@@ -1,6 +1,6 @@
 module Lecture9b where
 
-import Control.Monad
+import Control.Monad as M
 import Data.List
 
 -- 1. An example of the list monad
@@ -15,6 +15,15 @@ moveKnight (c, r) = filter onBoard
   ,(c+1, r-2), (c+1,r+2), (c-1, r-2), (c-1, r+2)
   ]
   where onBoard (c, r) = c `elem` [1..8] && r `elem` [1..8]
+
+
+moveKnight' :: Pos -> [Pos]
+moveKnight' (c, r) = do
+    (c', r') <- [(c+2, r-1), (c+2, r+1), (c-2, r-1), (c-2, r+1)
+                ,(c+1, r-2), (c+1, r+2), (c-1, r-2), (c-1, r+2)
+                ]
+    M.guard (c' `elem` [1..8] && r' `elem` [1..8])
+    return (c', r')
 
 -- moveKnight (6, 2)
 -- moveKnight (8, 1)
@@ -33,6 +42,8 @@ in3' start = return start >>= moveKnight >>= moveKnight >>= moveKnight
 -- A function to check whether a we can reach in 3
 canReachIn3 :: Pos -> Pos -> Bool
 canReachIn3 start end = end `elem` in3 start
+
+
 
 -- (6, 2) `canReachIn3` (6, 1)
 -- (6, 2) `canReachIn3` (7, 3)
@@ -107,4 +118,4 @@ addStuff = do
   b <- (+10)
   return (a+b)
 
-
+-- https://people.cs.kuleuven.be/~tom.schrijvers/Research/talks/probability_monad.pdf
