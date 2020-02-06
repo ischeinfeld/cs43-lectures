@@ -2,6 +2,7 @@ module Lecture9b where
 
 import Control.Monad as M
 import Data.List
+import Data.Ratio
 
 -- 1. An example of the list monad
 
@@ -112,11 +113,61 @@ canReachIn x start end = end `elem` inMany x start
   
 {-h >>= f = \w -> f (h w) w-}
 
+-- Do expression always results in a monadic value
+-- The result of this value is a function.
+-- It takes a number and then (*2) gets applied to that number
+-- +10 is applied to that same number and becomes b.
+-- a + b 
 addStuff :: Int -> Int
 addStuff = do
   a <- (*2)
   b <- (+10)
   return (a+b)
 
+addStuff' :: Int -> Int
+addStuff' x = let
+  a = (*2) x
+  b = (+10) x
+  in a+b
+
 -- https://people.cs.kuleuven.be/~tom.schrijvers/Research/talks/probability_monad.pdf
 -- https://doisinkidney.com/posts/2018-06-30-probability-5-ways.html
+
+-- Suppose we have a list [3, 5, 9], 
+-- where 3 happens with 0.5 chance
+-- 5 happens with 0.25 chance
+-- 9 happens with 0.25 chance.
+-- We'll use rationals to make sure we don't lose precision.
+newtype Prob a = Prob { getProb :: [(a, Rational)] } deriving Show
+
+instance Functor Prob where
+  fmap f (Prob xs) = Prob $ map (\(x,p) -> (f x, p)) xs
+
+instance Monad Prob where
+  return x = Prob [(x, 1%1)]
+
+flatten :: Prob (Prob a) -> Prob a
+flatten (Prob xs) = Prob $ concat $ map multAll xs
+  where multAll (Prob innerxs, p) = map (\(x, r) -> (x, p*r))
+
+instance Monad Prob where  
+    return x = Prob [(x,1%1)]  
+    m >>= f = flatten (fmap f m)  
+    fail _ = Prob []
+
+data Coin = Heads | Tails deriving (Show, Eq)  
+  
+coin :: Prob Coin  
+coin = Prob [(Heads,1%2),(Tails,1%2)]  
+  
+loadedCoin :: Prob Coin  
+loadedCoin = Prob [(Heads,1%10),(Tails,9%10)]  
+
+flipThree :: Prob Bool  
+flipThree = do  
+    a <- coin  
+    b <- coin  
+    c <- loadedCoin  
+    return (all (==Tails) [a,b,c])  
+
+
