@@ -201,7 +201,8 @@ addStuff = do
 
 addStuff' = (*2) >>= (+)
 
-{-addStuff :: Int -> Int-}
-{-addStuff = (\r -> r * 2) >>= (\x ->-}
-           {-(\r -> r + 10) >>= (\y ->-}
-           {-return (x + y)))-}
+addStuff :: Int -> Int
+addStuff = (\r -> r * 2) >>= (\x ->
+           (\r -> r + 10) >>= (\y ->
+           return (x + y)))
+
