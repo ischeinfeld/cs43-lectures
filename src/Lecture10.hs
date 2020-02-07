@@ -3,17 +3,46 @@ module Lecture10 where
 import Control.Monad
 import Data.Ratio
 
--- Functor  (a -> b) -> (f a -> f b)
--- Applicative f (a -> b) -> (f a -> f b)
--- Monad f a -> (a -> f b) -> f b
--- Monad m a -> (a -> m b) -> m b
+-- Functor :   (a -> b) -> (f a -> f b) lifts function
+-- Appl... : f (a -> b) -> (f a -> f b) lifts functor of function
+-- Monad   : (a -> f b) -> (f a -> f b) lifts function returning functor
 
+
+{- Functor f => Applicative f => Monad f
+
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
+class Functor f => Applicative f where
+  pure :: a -> f a
+  (<*>) :: f (a -> b) -> f a -> f b
+
+class Applicative m => Monad m where
+  (>>=) :: f a -> (a -> f b) -> f b
+
+-- Also have the following functions in Monad, which are implemented
 -- in Applicative
-{-return :: a -> f a-}
-{-return = pure-}
 
-{-(>>) :: f a -> f b -> f b-}
-{-(>>) = (*>) -}
+  return :: a -> f a
+  return = pure
+
+  (>>) :: f a -> f b -> f b
+  (>>) = (*>) = liftA2 (flip const) = \x y -> x >>= \_ -> y
+
+  -- note Monad "is-a" Applicative relationship, let's you use >> or *>
+  -- note recursive bindings for *>, >>
+
+-}
+
+-- > fmap (+ 5) (Just 6)
+-- > fmap (+ 5) Nothing
+
+-- > (Just (+ 5)) <*> (Just 6)
+-- > Nothing <*> (Just 6)
+
+-- > (\x -> if x > 0 then Just x else Nothing) =<< (Just 5)
+-- > (\x -> if x > 0 then Just x else Nothing) =<< Nothing
+-- > (\x -> if x > 0 then Just x else Nothing) =<< (Just (-5))
 
 thing1 = do
   Just 5
@@ -41,7 +70,6 @@ moveKnight (c, r) = filter onBoard
   ]
   where onBoard (c, r) = c `elem` [1..8] && r `elem` [1..8]
 
--- Want all possive moves after 3 steps
 in3 :: Pos -> [Pos]
 in3 start = return start >>= moveKnight >>= moveKnight >>= moveKnight
 
@@ -57,8 +85,6 @@ inMany :: Int -> Pos -> [Pos]
 inMany n start = return start >>= foldr (<=<) return (replicate n moveKnight)
 
 canReachIn n start end = end `elem` inMany n start
-
---
 
 newtype Prob a = Prob { getProb :: [(a, Rational)] } deriving Show
 
