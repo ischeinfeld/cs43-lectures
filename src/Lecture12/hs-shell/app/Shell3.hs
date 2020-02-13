@@ -15,8 +15,18 @@ import System.IO.Error
 import Control.Monad
 import System.Environment
 
+type CloseFDs = MVar [Fd]
+
 data StatusCode = Exit | Prompt | Wait deriving (Eq, Show)
 data Status = Status { code :: StatusCode, pid :: Maybe ProcessID}
+
+class CommandLike a where
+  invoke :: a -> CloseFDs -> String -> IO CommandResult
+
+data CommandResult = CommandResult {
+                   cmdOutput :: IO String
+                   getExitStatus :: IO ProcessStatus
+                   }
 
 builtinCmds :: [(String, [String] -> IO Status)]
 builtinCmds = [("help", hashHelp),
@@ -35,6 +45,16 @@ prompt = do
   case input of
     Nothing -> prompt
     Just i -> runCommand i
+
+instance CommandLike (String, [String]) where
+  invoke (cmd, args) closefds input =
+    do
+      -- create two pipes: one to handle stdin
+      -- other to handle stdout
+      (stdinread, stdinwrite) <- createPipe
+      (stidoutread, stdoutwrite) <- createPipe
+
+      addCloseFDs closefds
 
 runCommand :: String -> IO ()
 runCommand line = do
