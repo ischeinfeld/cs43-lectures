@@ -71,11 +71,7 @@ wait childPID responder = do
   status <- getProcessStatus True False childPID
   case status of
     Nothing -> fail "Error: nothing from getProcess status"
-    Just ps -> case ps of
-      Exited ExitSuccess ->
-        responder Status {code = Prompt, pid = Nothing}
-      _ -> responder Status {code = Prompt, pid = Nothing}
-  
+    Just ps -> responder Status {code = Prompt, pid = Nothing} 
 
 execute :: String -> [String] -> IO Status
 execute cmd args = do
