@@ -11,36 +11,39 @@ import Data.Array.IO
 --
 -- `Program a` was an effect on a stack eventually returning a value
 -- `IO a` is an IO effect eventually returning a value
---
 
-main :: IO ()
-main = do
-  x <- getLine
-  let v = read x
-  (fib v)
-  return ()
+main :: IO () -- RealWorld -> ((), RealWorld)
+main = putStrLn "hello world" -- :t ?
 
-io0 :: IO ()
-io0 = forever $ getLine >>= putStrLn
+main' = getLine >>= putStrLn
+main'' = forever $ getLine >>= putStrLn
+
+-- HOOGLE forever, type and implementation
 
 io1 :: IO ()
 io1 = do
-  putStr "enter a number: "
+  putStrLn "Hi, what's your name?" 
+  x <- getLine -- :t ?
+  putStrLn $ "Nice to meet you " ++ x ++ "!"
+
+io2 :: IO ()
+io2 = do
+  putStr "Please enter a number: "
   x <- getLine
   when (and $ fmap isDigit x) (comment $ read x)
 
 comment :: Int -> IO ()
-comment x
-  | even x = putStrLn "great number"
+comment n
+  | even n = putStrLn "Wow, an even number!"
   | otherwise = return ()
+  
 
-
-
+-- Memory
 
 io3 :: IO ()
 io3 = do
   ref <- newIORef (0 :: Int)
-  replicateM_ 100 $ modifyIORef ref (+ 1) -- sequence_ $ replicate n ...
+  replicateM_ 100 $ modifyIORef ref (+1)
   readIORef ref >>= print
 
 fib :: Int -> IO Int
@@ -57,3 +60,14 @@ fib n = do
   res <- readIORef ref2
   print res
   return res
+  
+
+-- Why doesn't passing two functions the same IORef and cause problems
+
+io4 :: IO ()
+io4 = do
+  arr <- newArray (1,10) 37 :: IO (IOArray Int Int)
+  a <- readArray arr 1
+  writeArray arr 1 64
+  b <- readArray arr 1 
+  print (a,b)
