@@ -5,32 +5,26 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
 -- example modified from blogpost by Josh Clayton
 
-import Control.Monad
-import Control.Monad.Trans.Except (ExceptT)
-import Control.Monad.Trans.Reader (ReaderT)
+import           Control.Monad
+import           Control.Monad.Trans.Except (ExceptT)
+import           Control.Monad.Trans.Reader (ReaderT)
 import qualified Control.Monad.Trans.Except as Except 
 import qualified Control.Monad.Trans.Reader as Reader
-import Control.Exception (IOException)
+import           Control.Exception (IOException)
 import qualified Control.Exception as E
 
-import qualified Data.Bifunctor as BF
 import qualified Data.Bool as B
 import qualified Data.Char as C
 import           Options.Applicative
 
 -- newtype ExceptT e m a = ExceptT (m (Either e a))
 -- newtype ReaderT r m a = ReaderT { runReaderT :: r -> m a }
-
-data Options = Options
-    { oCapitalize :: Bool 
-    , oExcited :: Bool
-    , oStdIn :: Bool
-    , oFileToRead :: Maybe String }
 
 --------------------------------------------
 -- transformers allow lifting monadic values
@@ -143,6 +137,14 @@ instance MonadReader r m => MonadReader r (ExceptT e m) where
 -- now we can write our app!
 -----------------------------------------------
 
+data Options = Options
+    { oCapitalize :: Bool 
+    , oExcited :: Bool
+    , oStdIn :: Bool
+    , oFileToRead :: Maybe String }
+  deriving (Show)
+
+
 newtype App a = App {
   runApp :: ReaderT Options (ExceptT IOException IO) a
 } deriving ( Functor
@@ -155,6 +157,11 @@ newtype App a = App {
 
 main :: IO ()
 main = parseCLI >>= (runProgram app)
+
+-- > :main --file "testfile.txt" 
+-- > :main --file "testfile.txt" --excited
+-- > :main --file "testfile.txt" --capitalize
+-- > :main --file "testfile.txt" --capitalize --excited
 
 
 -----------------------------------------------
@@ -184,14 +191,17 @@ runProgram app o = let rt = runApp app             :: ReaderT Options (ExceptT I
                        io = Except.runExceptT et   :: IO (Either IOException ())
                     in either renderError return =<< io
   where renderError e = do
-        putStrLn "There was an error:"
-        putStrLn $ "  " ++ show e
+          putStrLn "There was an error:"
+          putStrLn $ "  " ++ show e
 
-app :: App ()                -- do
-app = getSource              --   source <- getSource
-  >>= handleCapitalization   --   capitalized <- handleCapitalization source
-  >>= handleExcitedness      --   excited <- handleExcitedness capitalized
-  >>= (liftIO . putStr)      --   liftIO $ putStr excited
+app :: App ()               -- do
+app = getSource             --   source <- getSource
+  >>= handleCapitalization  --   capitalized <- handleCapitalization source
+  >>= handleExcitedness     --   excited <- handleExcitedness capitalized
+  >>= (liftIO . putStr)     --   liftIO $ putStr excited
+
+-- :t getSource
+-- :t getSource @App
 
 
 -----------------------------------------------
@@ -207,8 +217,8 @@ getSource
 getSource = do   
   stdInFlag <- reader oStdIn
   if stdInFlag
-    then loadContents
-    else liftIO getContents
+    then liftIO getContents
+    else loadContents
 
 -- getSource' = B.bool loadContents (liftIO getContents) =<< reader oStdIn
 
@@ -232,7 +242,7 @@ handleCapitalization :: MonadReader Options m => String -> m String
 handleCapitalization s = B.bool s (map C.toUpper s) <$> reader oCapitalize
 
 handleExcitedness :: MonadReader Options m => String -> m String
-handleExcitedness s = B.bool s ("ZOMG " ++ s) <$> reader oExcited
+handleExcitedness s = B.bool s ("OMG " ++ s) <$> reader oExcited
 
 
 -----------------------------------------------
